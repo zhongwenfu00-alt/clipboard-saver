@@ -1,7 +1,7 @@
-import { Plugin, PluginSettingTab, Setting, Notice, TFile } from "obsidian";
+import { Plugin, PluginSettingTab, Setting, Notice, TFile, App } from "obsidian";
 
 /*
- * 跨端剪贴板保存插件
+ * 跨端剪贴板保存插件 / Cross-platform clipboard saver
  * ------------------------------------------------------------------
  * 桌面端（Obsidian 跑在 Electron 内）：
  *   - 通过 require("electron").clipboard 监听全局 "text-changed" 事件，
@@ -14,11 +14,28 @@ import { Plugin, PluginSettingTab, Setting, Notice, TFile } from "obsidian";
  *
  * 因此本插件 isDesktopOnly = false，桌面自动 + 手机手动，两端通用。
  */
-declare const require: any;
-const electron = typeof require === "function" ? require("electron") : null;
-const electronClipboard = electron
-	? electron.clipboard || (electron.remote && electron.remote.clipboard)
-	: null;
+
+interface ElectronClipboard {
+	on(event: string, listener: () => void): void;
+	removeListener(event: string, listener: () => void): void;
+	readText(): string;
+}
+
+interface ElectronModule {
+	clipboard?: ElectronClipboard;
+	remote?: { clipboard?: ElectronClipboard };
+}
+
+function getElectronClipboard(): ElectronClipboard | null {
+	const req = (globalThis as { require?: (id: string) => unknown }).require;
+	if (typeof req !== "function") return null;
+	const electron = req("electron") as ElectronModule;
+	if (electron?.clipboard) return electron.clipboard;
+	if (electron?.remote?.clipboard) return electron.remote.clipboard;
+	return null;
+}
+
+const electronClipboard = getElectronClipboard();
 
 interface ClipboardSaverSettings {
 	/** 桌面端：是否启用自动监听（移动端无此能力，开关视同无效） */
@@ -49,24 +66,19 @@ export default class ClipboardSaverPlugin extends Plugin {
 		// 桌面端开启自动监听
 		if (electronClipboard && this.settings.enabled) {
 			this.startMonitoring();
-		} else if (!electronClipboard) {
-			// 移动端：提示用户使用手动命令
-			console.log(
-				"Clipboard Saver：移动端无 Electron，自动监听不可用，请使用命令“保存当前剪贴板内容”。"
-			);
 		}
 
 		// 命令：随手切换桌面端自动监听开关
 		this.addCommand({
 			id: "toggle-clipboard-monitor",
 			name: "切换剪贴板自动监听（桌面端）",
-			callback: () => {
+			callback: async () => {
 				if (!electronClipboard) {
 					new Notice("Clipboard Saver：移动端不支持自动监听，请使用“保存当前剪贴板内容”命令。");
 					return;
 				}
 				this.settings.enabled = !this.settings.enabled;
-				this.saveSettings();
+				await this.saveSettings();
 				if (this.settings.enabled) {
 					this.startMonitoring();
 					new Notice("Clipboard Saver：已开启自动监听");
@@ -82,7 +94,7 @@ export default class ClipboardSaverPlugin extends Plugin {
 			id: "save-clipboard-now",
 			name: "保存当前剪贴板内容",
 			callback: () => {
-				this.handleClipboardChange(true);
+				void this.handleClipboardChange(true);
 			},
 		});
 	}
@@ -95,12 +107,14 @@ export default class ClipboardSaverPlugin extends Plugin {
 	startMonitoring() {
 		if (!electronClipboard) return; // 移动端无 Electron
 		if (this.textChangedHandler) return; // 已在监听
-		this.textChangedHandler = () => this.handleClipboardChange(false);
+		this.textChangedHandler = () => {
+			void this.handleClipboardChange(false);
+		};
 		electronClipboard.on("text-changed", this.textChangedHandler);
 	}
 
 	stopMonitoring() {
-		if (this.textChangedHandler) {
+		if (this.textChangedHandler && electronClipboard) {
 			electronClipboard.removeListener(
 				"text-changed",
 				this.textChangedHandler
@@ -115,21 +129,18 @@ export default class ClipboardSaverPlugin extends Plugin {
 	 * 失败或不可用时退回 Electron（桌面后台更稳）。
 	 */
 	private async readClipboard(): Promise<string> {
+		const clip =
+			typeof navigator !== "undefined" ? navigator.clipboard : undefined;
 		try {
-			if (
-				typeof navigator !== "undefined" &&
-				navigator.clipboard &&
-				navigator.clipboard.readText
-			) {
-				const text = await navigator.clipboard.readText();
+			if (clip && clip.readText) {
+				const text = await clip.readText();
 				if (text) return text;
 			}
-		} catch (e) {
+		} catch {
 			// 权限被拒或焦点问题，继续走 Electron 兜底
-			console.warn("Clipboard Saver：navigator.clipboard 读取失败，尝试 Electron 兜底", e);
 		}
 		if (electronClipboard) {
-			return electronClipboard.readText() || "";
+			return electronClipboard.readText();
 		}
 		return "";
 	}
@@ -138,7 +149,7 @@ export default class ClipboardSaverPlugin extends Plugin {
 	 * 剪贴板变化 / 手动触发时的处理逻辑。
 	 * @param force 为 true 时（手动命令）跳过内容去重，强制写入
 	 */
-	private async handleClipboardChange(force = false) {
+	private async handleClipboardChange(force = false): Promise<void> {
 		const content = await this.readClipboard();
 		if (!content) {
 			new Notice("Clipboard Saver：剪贴板为空或读取被拒绝（请检查剪贴板权限）。");
@@ -190,7 +201,7 @@ export default class ClipboardSaverPlugin extends Plugin {
 class ClipboardSaverSettingTab extends PluginSettingTab {
 	plugin: ClipboardSaverPlugin;
 
-	constructor(app: any, plugin: ClipboardSaverPlugin) {
+	constructor(app: App, plugin: ClipboardSaverPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

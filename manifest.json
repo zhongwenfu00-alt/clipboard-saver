@@ -1,9 +1,9 @@
 {
   "id": "clipboard-saver",
   "name": "Clipboard Saver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.1.0",
-  "description": "把系统剪贴板内容（带时间戳）保存到当前笔记：桌面端复制即自动追加，移动端用命令手动保存。",
+  "description": "Auto-save system clipboard contents (with timestamp) to the current note. Desktop appends on copy; mobile saves via command.",
   "author": "WorkBuddy",
   "authorUrl": "",
   "isDesktopOnly": false

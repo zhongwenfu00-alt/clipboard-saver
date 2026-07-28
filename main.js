@@ -28,8 +28,15 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var electron = typeof require === "function" ? require("electron") : null;
-var electronClipboard = electron ? electron.clipboard || electron.remote && electron.remote.clipboard : null;
+function getElectronClipboard() {
+  const req = globalThis.require;
+  if (typeof req !== "function") return null;
+  const electron = req("electron");
+  if (electron?.clipboard) return electron.clipboard;
+  if (electron?.remote?.clipboard) return electron.remote.clipboard;
+  return null;
+}
+var electronClipboard = getElectronClipboard();
 var DEFAULT_SETTINGS = {
   enabled: true,
   includeTimestamp: true,
@@ -47,21 +54,17 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
     this.addSettingTab(new ClipboardSaverSettingTab(this.app, this));
     if (electronClipboard && this.settings.enabled) {
       this.startMonitoring();
-    } else if (!electronClipboard) {
-      console.log(
-        "Clipboard Saver\uFF1A\u79FB\u52A8\u7AEF\u65E0 Electron\uFF0C\u81EA\u52A8\u76D1\u542C\u4E0D\u53EF\u7528\uFF0C\u8BF7\u4F7F\u7528\u547D\u4EE4\u201C\u4FDD\u5B58\u5F53\u524D\u526A\u8D34\u677F\u5185\u5BB9\u201D\u3002"
-      );
     }
     this.addCommand({
       id: "toggle-clipboard-monitor",
       name: "\u5207\u6362\u526A\u8D34\u677F\u81EA\u52A8\u76D1\u542C\uFF08\u684C\u9762\u7AEF\uFF09",
-      callback: () => {
+      callback: async () => {
         if (!electronClipboard) {
           new import_obsidian.Notice("Clipboard Saver\uFF1A\u79FB\u52A8\u7AEF\u4E0D\u652F\u6301\u81EA\u52A8\u76D1\u542C\uFF0C\u8BF7\u4F7F\u7528\u201C\u4FDD\u5B58\u5F53\u524D\u526A\u8D34\u677F\u5185\u5BB9\u201D\u547D\u4EE4\u3002");
           return;
         }
         this.settings.enabled = !this.settings.enabled;
-        this.saveSettings();
+        await this.saveSettings();
         if (this.settings.enabled) {
           this.startMonitoring();
           new import_obsidian.Notice("Clipboard Saver\uFF1A\u5DF2\u5F00\u542F\u81EA\u52A8\u76D1\u542C");
@@ -75,7 +78,7 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
       id: "save-clipboard-now",
       name: "\u4FDD\u5B58\u5F53\u524D\u526A\u8D34\u677F\u5185\u5BB9",
       callback: () => {
-        this.handleClipboardChange(true);
+        void this.handleClipboardChange(true);
       }
     });
   }
@@ -86,11 +89,13 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
   startMonitoring() {
     if (!electronClipboard) return;
     if (this.textChangedHandler) return;
-    this.textChangedHandler = () => this.handleClipboardChange(false);
+    this.textChangedHandler = () => {
+      void this.handleClipboardChange(false);
+    };
     electronClipboard.on("text-changed", this.textChangedHandler);
   }
   stopMonitoring() {
-    if (this.textChangedHandler) {
+    if (this.textChangedHandler && electronClipboard) {
       electronClipboard.removeListener(
         "text-changed",
         this.textChangedHandler
@@ -104,16 +109,16 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
    * 失败或不可用时退回 Electron（桌面后台更稳）。
    */
   async readClipboard() {
+    const clip = typeof navigator !== "undefined" ? navigator.clipboard : void 0;
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
+      if (clip && clip.readText) {
+        const text = await clip.readText();
         if (text) return text;
       }
-    } catch (e) {
-      console.warn("Clipboard Saver\uFF1Anavigator.clipboard \u8BFB\u53D6\u5931\u8D25\uFF0C\u5C1D\u8BD5 Electron \u515C\u5E95", e);
+    } catch {
     }
     if (electronClipboard) {
-      return electronClipboard.readText() || "";
+      return electronClipboard.readText();
     }
     return "";
   }

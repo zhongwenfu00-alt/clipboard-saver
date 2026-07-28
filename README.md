@@ -1,45 +1,55 @@
 # Clipboard Saver
 
-把系统剪贴板的内容（附带时间戳）保存到当前打开的 Markdown 笔记里。
+Auto-save the contents of your system clipboard (with a timestamp) to the currently open Markdown note.
 
-## 功能
+## Features
 
-- **桌面端（Windows / macOS / Linux）**：开启后，只要复制了新文本，内容就会**自动**追加到当前笔记末尾。
-- **移动端（Android / iOS）**：Obsidian 移动端没有系统级剪贴板监听能力，无法自动捕获；改为用命令**手动保存**——点一下「保存当前剪贴板内容」，即可把当前剪贴板写入笔记。
-- 写入格式：分隔线 → 时间戳 → 内容 → 分隔线。分隔符、是否写时间戳均可在设置中调整。
+- **Desktop (Windows / macOS / Linux):** once enabled, any newly copied text is **automatically** appended to the end of the active note.
+- **Mobile (Android / iOS):** Obsidian mobile has no system-level clipboard monitoring, so saving is **manual** — run the command "保存当前剪贴板内容" (Save current clipboard) to write the current clipboard into the note.
+- Output format: separator → timestamp → content → separator. The separator and timestamp toggle are adjustable in settings.
 
-## 用法
+## Usage
 
-1. 在 Obsidian 设置 → 社区插件中启用 **Clipboard Saver**。
-2. **桌面端**：默认自动监听已开启，直接复制任意文本即可。可在设置里关闭自动监听。
-3. **移动端**：打开一篇笔记，打开命令面板（手机上为插件命令 /  ribbon），运行「保存当前剪贴板内容」。首次会请求剪贴板权限，允许即可。
+1. Enable **Clipboard Saver** in Obsidian Settings → Community plugins.
+2. **Desktop:** auto-monitor is on by default; just copy any text. You can turn it off in settings.
+3. **Mobile:** open a note, open the command palette, and run "保存当前剪贴板内容". The first run asks for clipboard permission.
 
-## 命令
+## Commands
 
-- `保存当前剪贴板内容`：读取当前剪贴板并写入当前笔记（桌面 + 移动通用）。
-- `切换剪贴板自动监听（桌面端）`：开/关桌面端自动监听。
+- `保存当前剪贴板内容` (Save current clipboard): read the clipboard and append it to the current note (desktop + mobile).
+- `切换剪贴板自动监听（桌面端）` (Toggle auto-monitor, desktop): turn desktop auto-monitoring on/off.
 
-## 设置
+## Settings
 
-- **自动监听（仅桌面端）**：复制即写入。移动端无此能力。
-- **写入时间戳**：在内容上方附加当前时间。
-- **分隔符**：包裹剪贴板内容的分隔线文本。
+- **自动监听（仅桌面端） / Auto-monitor (desktop only):** append on copy. Not available on mobile.
+- **写入时间戳 / Include timestamp:** prepend the current time above the content.
+- **分隔符 / Separator:** text used to wrap the clipboard content.
 
-## 实现说明
+## How it works
 
-- 桌面端通过 Obsidian 宿主的 Electron `clipboard` 模块监听全局 `text-changed` 事件，实现复制即捕获。
-- 移动端使用浏览器 `navigator.clipboard.readText()`，需要用户点击触发并授权。
-- 因此本插件 `isDesktopOnly = false`，两端通用，但移动端为手动触发。
+- Desktop uses Obsidian's Electron `clipboard` module to listen for the global `text-changed` event.
+- Mobile uses the browser `navigator.clipboard.readText()`, which requires a user tap and permission.
+- The plugin is `isDesktopOnly = false`: one plugin for both, manual on mobile.
 
-## 开发
+## Development
 
 ```bash
 npm install
-npm run build      # 类型检查 + esbuild 打包，输出 main.js
+npm run build      # type-check + esbuild bundle, outputs main.js
 ```
 
-构建产物 `main.js` 与 `manifest.json` 需放到 Vault 的 `.obsidian/plugins/clipboard-saver/` 目录下。
+Place the built `main.js` and `manifest.json` into your vault's `.obsidian/plugins/clipboard-saver/` folder.
 
-## 许可
+## License
 
 MIT
+
+---
+
+# 中文说明
+
+把系统剪贴板的内容（附带时间戳）保存到当前打开的 Markdown 笔记里。
+
+- **桌面端**：开启后复制新文本即自动追加到当前笔记末尾。
+- **移动端**：无系统级剪贴板监听，用命令「保存当前剪贴板内容」手动保存（需点击并授权）。
+- 设置可调整分隔符与是否写入时间戳。
