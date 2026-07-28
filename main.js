@@ -29,7 +29,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 function getElectronClipboard() {
-  const req = globalThis.require;
+  const req = window.require;
   if (typeof req !== "function") return null;
   const electron = req("electron");
   if (electron?.clipboard) return electron.clipboard;
@@ -160,7 +160,8 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
     return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
   }
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const data = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
   }
   async saveSettings() {
     await this.saveData(this.settings);

@@ -27,7 +27,7 @@ interface ElectronModule {
 }
 
 function getElectronClipboard(): ElectronClipboard | null {
-	const req = (globalThis as { require?: (id: string) => unknown }).require;
+	const req = (window as unknown as { require?: (id: string) => unknown }).require;
 	if (typeof req !== "function") return null;
 	const electron = req("electron") as ElectronModule;
 	if (electron?.clipboard) return electron.clipboard;
@@ -190,7 +190,8 @@ export default class ClipboardSaverPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as Partial<ClipboardSaverSettings>;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 
 	async saveSettings() {
