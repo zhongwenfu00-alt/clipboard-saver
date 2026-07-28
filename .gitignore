@@ -1,0 +1,9 @@
+# vendored dependencies
+node_modules
+
+# build output (the bundled main.js lives in .obsidian/plugins/clipboard-saver)
+main.js
+
+# misc
+.DS_Store
+*.log
