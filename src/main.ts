@@ -8,9 +8,9 @@ import { Plugin, PluginSettingTab, Setting, Notice, TFile, App } from "obsidian"
  *     复制即自动把内容（带时间戳）追加到当前打开的 Markdown 笔记末尾。
  *
  * 移动端（Android/iOS，无 Electron）：
- *   - 没有系统级剪贴板监听能力，无法“自动”捕获。
- *   - 提供命令“保存当前剪贴板内容”：点一下，用浏览器 navigator.clipboard
- *     读取当前剪贴板（需授权）并写入笔记。桌面端也可用此命令手动保存。
+ *   - 没有系统级剪贴板监听能力，无法“自动”捕获（操作系统限制）。
+ *   - 提供命令“保存当前剪贴板内容”与左侧 ribbon 图标，点一下即用
+ *     navigator.clipboard 读取当前剪贴板（需授权）并写入笔记。
  *
  * 因此本插件 isDesktopOnly = false，桌面自动 + 手机手动，两端通用。
  */
@@ -96,6 +96,12 @@ export default class ClipboardSaverPlugin extends Plugin {
 			callback: () => {
 				void this.handleClipboardChange(true);
 			},
+		});
+
+		// 移动端最便捷的触发：点一下左侧 ribbon 图标即保存当前剪贴板内容。
+		// 手机端无法后台监听剪贴板，必须借助这次点击手势才能读取剪贴板。
+		this.addRibbonIcon("clipboard", "保存当前剪贴板内容", () => {
+			void this.handleClipboardChange(true);
 		});
 	}
 

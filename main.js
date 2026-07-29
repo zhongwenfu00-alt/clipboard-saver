@@ -81,6 +81,9 @@ var ClipboardSaverPlugin = class extends import_obsidian.Plugin {
         void this.handleClipboardChange(true);
       }
     });
+    this.addRibbonIcon("clipboard", "\u4FDD\u5B58\u5F53\u524D\u526A\u8D34\u677F\u5185\u5BB9", () => {
+      void this.handleClipboardChange(true);
+    });
   }
   onunload() {
     this.stopMonitoring();

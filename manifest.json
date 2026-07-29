@@ -1,7 +1,7 @@
 {
   "id": "clipboard-saver",
   "name": "Clipboard Saver",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "1.1.0",
   "description": "Auto-save system clipboard contents (with timestamp) to the current note. Desktop appends on copy; mobile saves via command.",
   "author": "WorkBuddy",

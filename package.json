@@ -1,6 +1,6 @@
 {
   "name": "clipboard-saver",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Auto-save system clipboard contents (with timestamp) to the current note.",
   "main": "main.js",
   "scripts": {
